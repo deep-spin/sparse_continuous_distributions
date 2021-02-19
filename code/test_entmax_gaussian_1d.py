@@ -42,5 +42,8 @@ if __name__ == '__main__':
         plt.plot(t, entmax.pdf(t[None, :]), label='%f' % alpha)
         y, err = integrate.quad(entmax.pdf, -5, 5)
         print(y)
+        print(entmax.mean())
+        print(entmax.variance())
+        print(entmax.tsallis_entropy())
     plt.legend()
     plt.show()

@@ -31,6 +31,13 @@ class EntmaxGaussian(object):
         return -(self._R**2)/2 * np.linalg.det(self._Sigma) ** (
             -1 / (self._n + 2/(self._alpha - 1)))
 
+    def mean(self):
+        return self._mu
+
+    def variance(self):
+        return ((-2*self._tau())/(self._n + 2*self._alpha/(self._alpha-1)) *
+                self._Sigma)
+
     def pdf(self, x):
         """Return the probability density function value for `x`."""
         y = self._Sigma_inv_sqrt.dot(x - self._mu[:, None])
@@ -44,7 +51,8 @@ class EntmaxGaussian(object):
 
     def tsallis_entropy(self):
         """Compute Tsallis alpha-entropy."""
-        raise NotImplementedError
+        return (1/(self._alpha*(self._alpha-1)) -
+                (-2*self._tau())/(2*self._alpha + self._n * (self._alpha-1)))
 
 
 class EntmaxGaussian1D(object):
