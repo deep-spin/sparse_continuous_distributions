@@ -124,9 +124,6 @@ class SparsemaxGaussian1DKernel(EntmaxGaussian1DKernel):
                  use_escort=True):
         super().__init__(alpha=2, mu=mu, sigma_sq=sigma_sq,
                          support_size=support_size, use_escort=False)
-        #self._mu = mu
-        #self._sigma_sq = sigma_sq
-        #self._alpha = 2
         self._sparsemax = SparsemaxGaussian1D(mu=mu, sigma_sq=sigma_sq,
                                               support_size=support_size)
         self._a = self._sparsemax.support_size() / 2
@@ -189,9 +186,6 @@ class BiweightGaussian1DKernel(EntmaxGaussian1DKernel):
                  use_escort=True):
         super().__init__(alpha=1.5, mu=mu, sigma_sq=sigma_sq,
                          support_size=support_size, use_escort=False)
-        #self._mu = mu
-        #self._sigma_sq = sigma_sq
-        #self._alpha = 1.5
         self._biweight = BiweightGaussian1D(mu=mu, sigma_sq=sigma_sq,
                                             support_size=support_size)
         self._a = self._biweight.support_size() / 2
@@ -285,9 +279,6 @@ class TriweightGaussian1DKernel(EntmaxGaussian1DKernel):
                  use_escort=True):
         super().__init__(alpha=4/3, mu=mu, sigma_sq=sigma_sq,
                          support_size=support_size, use_escort=False)
-        #self._mu = mu
-        #self._sigma_sq = sigma_sq
-        #self._alpha = 4/3
         self._triweight = TriweightGaussian1D(mu=mu, sigma_sq=sigma_sq,
                                               support_size=support_size)
         self._a = self._triweight.support_size() / 2

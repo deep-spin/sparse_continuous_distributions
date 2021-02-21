@@ -3,13 +3,6 @@ from scipy.special import erf
 import numpy as np
 
 
-def Phi(x):
-    return .5*(1 + erf(x/np.sqrt(2)))
-
-def phi(x):
-    return 1/np.sqrt(2*np.pi) * np.exp(-.5*x**2)
-
-
 class GaussianBasisFunctions(object):
     """Function phi(t) = Gaussian(t; mu, sigma_sq)."""
 
