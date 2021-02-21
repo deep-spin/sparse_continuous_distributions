@@ -87,22 +87,6 @@ class EntmaxGaussian1DKernel(object):
         mass = torch.trapz(f, t, dim=0)
         return mass
 
-    def _unnormalized_mass(self, tau):
-        raise NotImplementedError
-        """Integrate ((alpha-1)(-tau - f(t)))_+**(1/(alpha-1)) for
-        arbitrary tau.
-        tau is a 1D tensor with dimension dim(mu).
-        The output is a 1D tensor with dimension dim(mu)."""
-        # M x dim(mu)
-        t = _batch_linspace(-self._a, self._a, self._num_samples)
-        # M x dim(mu)
-        sigma_sq = self._sigma_sq.unsqueeze(0)
-        tau = tau.unsqueeze(0)
-        # M x dim(mu)
-        f = (((self._alpha-1)*(-tau - t**2/(2*sigma_sq)))**(1/(self._alpha-1)))
-        mass = torch.trapz(f, t, dim=0)
-        return mass
-
     def attention(self, psi):
         return self.expectation_psi(psi)  # dim(mu) x dim(psi)
 
@@ -197,12 +181,6 @@ class SparsemaxGaussian1DKernel(EntmaxGaussian1DKernel):
     def _escort_normalizer(self):
         return 2 * self._a
 
-    def _unnormalized_mass(self, tau):
-        """Integrate ((alpha-1)(-tau - f(t)))_+**(1/(alpha-1)) for
-        arbitrary tau."""
-        raise NotImplementedError
-        #return -2 * tau * self._a - self._a**3/(3*self._sigma_sq)
-
     def expectation_t2(self):
         """Return E_{t~sparsemax}[t**2]."""
         # TODO: This can be made general code by renaming self._sparsemax.
@@ -271,14 +249,6 @@ class BiweightGaussian1DKernel(EntmaxGaussian1DKernel):
         #return (self._alpha - 1) * self._escort._unnormalized_mass(
         #    self._biweight._tau)
         return -self._biweight._tau * self._a - self._a**3/(6*self._sigma_sq)
-
-    def _unnormalized_mass(self, tau):
-        """Integrate ((alpha-1)(-tau - f(t)))_+**(1/(alpha-1)) for
-        arbitrary tau."""
-        raise NotImplementedError
-        #return (1/2 * tau**2 * self._a +
-        #        (tau / (6 * self._sigma_sq)) * self._a ** 3 +
-        #        (1 / (40 * self._sigma_sq**2)) * self._a ** 5)
 
     def expectation_t2(self):
         """Return E_{t~biweight}[t**2]."""
@@ -375,14 +345,6 @@ class TriweightGaussian1DKernel(EntmaxGaussian1DKernel):
         return 1/9 * (2 * tau**2 * self._a +
                       (2 * tau / (3 * self._sigma_sq)) * self._a ** 3 +
                       (1 / (10 * self._sigma_sq**2)) * self._a ** 5)
-        #return (1/2 * tau**2 * self._a +
-        #        (tau / (6 * self._sigma_sq)) * self._a ** 3 +
-        #        (1 / (40 * self._sigma_sq**2)) * self._a ** 5)
-
-    def _unnormalized_mass(self, tau):
-        """Integrate ((alpha-1)(-tau - f(t)))_+**(1/(alpha-1)) for
-        arbitrary tau."""
-        raise NotImplementedError
 
     def expectation_t2(self):
         """Return E_{t~biweight}[t**2]."""
