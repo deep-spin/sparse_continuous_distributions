@@ -87,6 +87,12 @@ class EntmaxGaussian1DKernel(object):
         mass = torch.trapz(f, t, dim=0)
         return mass
 
+    def mean(self):
+        return self._entmax.mean()
+    
+    def variance(self):
+        return self._entmax.variance()
+
     def sigma_sq_from_support_size(self, support_size):
         return self._entmax.sigma_sq_from_a(support_size/2)
 

@@ -7,7 +7,8 @@ torch.autograd.set_detect_anomaly(True)
 
 class ContinuousEntmaxFunction(torch.autograd.Function):
     @classmethod
-    def _attention(cls, ctx, kernel):
+    def _attention(cls, ctx):
+        kernel = ctx.kernel
         num_basis = [len(basis_functions) for basis_functions in ctx.psi]
         total_basis = sum(num_basis)
         r = torch.zeros((kernel._mu.shape[0], total_basis),
@@ -20,7 +21,8 @@ class ContinuousEntmaxFunction(torch.autograd.Function):
         return r
 
     @classmethod
-    def _jacobian(cls, ctx, kernel):
+    def _jacobian(cls, ctx):
+        kernel = ctx.kernel
         num_basis = [len(basis_functions) for basis_functions in ctx.psi]
         total_basis = sum(num_basis)
         J = torch.zeros((kernel._mu.shape[0], 2, total_basis),
@@ -48,20 +50,19 @@ class ContinuousEntmaxFunction(torch.autograd.Function):
         ctx.alpha = alpha
         sigma = torch.sqrt(-0.5 / theta[:, 1])
         mu = theta[:, 0] * sigma ** 2
-        kernel = EntmaxGaussian1DKernel(alpha, mu, sigma**2)
+        ctx.kernel = EntmaxGaussian1DKernel(alpha, mu, sigma**2)
 
         # r is dim(mu) x dim(psi)
-        r = cls._attention(ctx, kernel)
-        ctx.save_for_backward(mu, sigma)
+        r = cls._attention(ctx)
+        #ctx.save_for_backward(mu, sigma)
         return r
 
     @classmethod
     def backward(cls, ctx, grad_output):
-        mu, sigma = ctx.saved_tensors
-        kernel = EntmaxGaussian1DKernel(ctx.alpha, mu, sigma**2)
+        #mu, sigma = ctx.saved_tensors
         
         # J is dim(mu) x 2 x dim(psi)
-        J = cls._jacobian(ctx, kernel)
+        J = cls._jacobian(ctx)
         grad_input = torch.matmul(J, grad_output.unsqueeze(2)).squeeze(2)
         return grad_input, None, None
 
