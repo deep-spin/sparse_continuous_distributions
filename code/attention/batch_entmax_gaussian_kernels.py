@@ -87,6 +87,12 @@ class EntmaxGaussian1DKernel(object):
         mass = torch.trapz(f, t, dim=0)
         return mass
 
+    def sigma_sq_from_support_size(self, support_size):
+        return self._entmax.sigma_sq_from_a(support_size/2)
+
+    def sigma_sq_from_variance(self, variance):
+        return self._entmax._sigma_sq_from_variance(variance)
+
     def attention(self, psi):
         return self.expectation_psi(psi)  # dim(mu) x dim(psi)
 
@@ -181,6 +187,14 @@ class SparsemaxGaussian1DKernel(EntmaxGaussian1DKernel):
     def _escort_normalizer(self):
         return 2 * self._a
 
+    def sigma_sq_from_support_size(self, support_size):
+        # TODO: This can be made general code by renaming self._sparsemax.
+        return self._sparsemax.sigma_sq_from_a(support_size/2)
+
+    def sigma_sq_from_variance(self, variance):
+        # TODO: This can be made general code by renaming self._sparsemax.
+        return self._sparsemax._sigma_sq_from_variance(variance)
+
     def expectation_t2(self):
         """Return E_{t~sparsemax}[t**2]."""
         # TODO: This can be made general code by renaming self._sparsemax.
@@ -249,6 +263,14 @@ class BiweightGaussian1DKernel(EntmaxGaussian1DKernel):
         #return (self._alpha - 1) * self._escort._unnormalized_mass(
         #    self._biweight._tau)
         return -self._biweight._tau * self._a - self._a**3/(6*self._sigma_sq)
+
+    def sigma_sq_from_support_size(self, support_size):
+        # TODO: This can be made general code by renaming self._biweight.
+        return self._biweight.sigma_sq_from_a(support_size/2)
+
+    def sigma_sq_from_variance(self, variance):
+        # TODO: This can be made general code by renaming self._biweight.
+        return self._biweight._sigma_sq_from_variance(variance)
 
     def expectation_t2(self):
         """Return E_{t~biweight}[t**2]."""
@@ -331,7 +353,7 @@ class TriweightGaussian1DKernel(EntmaxGaussian1DKernel):
 
     def _escort_kernel(self):
         """Return the (2-alpha)-escort distribution, which is a
-        sparsemax Gaussian with the same support."""
+        biweight Gaussian with the same support."""
         return BiweightGaussian1DKernel(
             mu=self._mu,
             support_size=self._triweight.support_size(),
@@ -345,6 +367,14 @@ class TriweightGaussian1DKernel(EntmaxGaussian1DKernel):
         return 1/9 * (2 * tau**2 * self._a +
                       (2 * tau / (3 * self._sigma_sq)) * self._a ** 3 +
                       (1 / (10 * self._sigma_sq**2)) * self._a ** 5)
+
+    def sigma_sq_from_support_size(self, support_size):
+        # TODO: This can be made general code by renaming self._triweight.
+        return self._triweight.sigma_sq_from_a(support_size/2)
+
+    def sigma_sq_from_variance(self, variance):
+        # TODO: This can be made general code by renaming self._triweight.
+        return self._triweight._sigma_sq_from_variance(variance)
 
     def expectation_t2(self):
         """Return E_{t~biweight}[t**2]."""

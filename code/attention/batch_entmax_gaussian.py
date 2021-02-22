@@ -45,6 +45,10 @@ class EntmaxGaussian1D(object):
     def _sigma_sq_from_a(self, a):
         return (a / self._R) ** (self._alpha+1)
 
+    def _sigma_sq_from_variance(self, variance):
+        return ((1 + 2*self._alpha/(self._alpha-1)) / (self._R**2)
+                * variance) ** ((self._alpha + 1)/2)
+
     def mean(self):
         return self._mu
 
@@ -52,6 +56,9 @@ class EntmaxGaussian1D(object):
         if self._alpha == math.inf:
             return self._a**2 / 3
         else:
+            # Equivalently (without tau):
+            # return ((self._R**2) / (1 + 2*self._alpha/(self._alpha-1)) *  
+            #        self._sigma_sq ** (2/(self._alpha + 1)))
             return ((-2*self._tau)/(1 + 2*self._alpha/(self._alpha-1)) *
                     self._sigma_sq)
 
@@ -139,6 +146,9 @@ class SparsemaxGaussian1D(object):
     def _sigma_sq_from_a(self, a):
         return (2/3) * a**3
 
+    def _sigma_sq_from_variance(self, variance):
+        return 2/3 * (5*variance)**(3/2)
+
     def mean(self):
         return self._mu
 
@@ -169,7 +179,7 @@ class BiweightGaussian1D(object):
         """Create 1D beta-Gaussian with alpha=1.5 (biweight)."""
         self._alpha = 1.5
         self._mu = mu
-        self._R = _radius(1, self._alpha)
+        self._R = _radius(1, self._alpha)  # 15**(1/5)
         if sigma_sq is None:
             self._a = support_size/2
             self._sigma_sq = self._sigma_sq_from_a(self._a)
@@ -187,6 +197,9 @@ class BiweightGaussian1D(object):
 
     def _sigma_sq_from_a(self, a):
         return (a / self._R) ** (self._alpha+1)
+
+    def _sigma_sq_from_variance(self, variance):
+        return (1/15)**(1/2) * (7*variance)**(5/4)
 
     def mean(self):
         return self._mu
@@ -233,6 +246,12 @@ class TriweightGaussian1D(object):
 
     def _compute_a(self):
         return ((945/4)*self._sigma_sq**3)**(1/7)
+
+    def _sigma_sq_from_a(self, a):
+        return (a / self._R) ** (self._alpha+1)
+
+    def _sigma_sq_from_variance(self, variance):
+        return (4/945)**(1/3) * (9*variance)**(7/6)
 
     def mean(self):
         return self._mu
