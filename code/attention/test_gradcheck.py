@@ -1,10 +1,10 @@
 import pytest
-
 import torch
-from continuous_sparsemax import ContinuousSparsemax
-from continuous_biweight import ContinuousBiweight
-from continuous_triweight import ContinuousTriweight
-from continuous_entmax import ContinuousEntmax
+from continuous_entmax import (ContinuousEntmax,
+                               ContinuousSoftmax,
+                               ContinuousSparsemax,
+                               ContinuousBiweight,
+                               ContinuousTriweight)
 from basis_function import GaussianBasisFunctions
 
 nb_waves = 8
@@ -19,17 +19,22 @@ sigmas = sigmas.flatten()
 basis_functions = [GaussianBasisFunctions(mus, sigmas)]
 basis_function_ids = [repr(f) for f in basis_functions]
 
-##
-if False:
-    psi = basis_functions
-    sparsemax = ContinuousSparsemax(psi=psi)
-    theta = torch.randn(5, 2, dtype=torch.double, requires_grad=True)
-    theta[:, 1] = -(theta[:, 1] ** 2)
-    theta[:, 1] -= .1  # To be safe and not become positive under perturbation.
-    print(sparsemax(theta))
-    biweight = ContinuousBiweight(psi=psi)
-    print(biweight(theta))
-##
+
+@pytest.mark.parametrize('basis_function', basis_functions, ids=basis_function_ids)
+def test_softmax(basis_function):
+    psi = [basis_function]
+    softmax = ContinuousSoftmax(psi=psi)
+    
+    # directly generate fixed canonical parameters
+    torch.manual_seed(42)
+
+    for _ in range(10):
+        theta = torch.randn(5, 2, dtype=torch.double, requires_grad=True)
+        theta[:, 1] = -(theta[:, 1] ** 2)
+        theta[:, 1] -= .1  # To be safe and not become positive under perturbation.
+        res = torch.autograd.gradcheck(softmax, theta, eps=1e-4)
+        assert res
+
 
 @pytest.mark.parametrize('basis_function', basis_functions, ids=basis_function_ids)
 def test_sparsemax(basis_function):

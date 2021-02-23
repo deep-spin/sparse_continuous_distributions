@@ -1,4 +1,8 @@
-from batch_entmax_gaussian_kernels import EntmaxGaussian1DKernel
+from batch_entmax_gaussian_kernels import (EntmaxGaussian1DKernel,
+                                           Gaussian1DKernel,
+                                           SparsemaxGaussian1DKernel,
+                                           BiweightGaussian1DKernel,
+                                           TriweightGaussian1DKernel)
 import torch
 import torch.nn as nn
 
@@ -37,7 +41,7 @@ class ContinuousEntmaxFunction(torch.autograd.Function):
         return J
 
     @classmethod
-    def forward(cls, ctx, theta, psi, alpha):
+    def forward(cls, ctx, theta, psi, kernel):
         # We assume a truncated parabola.
         # We have:
         # theta = [mu/sigma**2, -1/(2*sigma**2)],
@@ -47,10 +51,10 @@ class ContinuousEntmaxFunction(torch.autograd.Function):
         ctx.dtype = theta.dtype
         ctx.device = theta.device
         ctx.psi = psi
-        ctx.alpha = alpha
+        ctx.kernel = kernel
         sigma = torch.sqrt(-0.5 / theta[:, 1])
         mu = theta[:, 0] * sigma ** 2
-        ctx.kernel = EntmaxGaussian1DKernel(alpha, mu, sigma**2)
+        kernel.set_parameters(mu=mu, sigma_sq=sigma**2)
 
         # r is dim(mu) x dim(psi)
         r = cls._attention(ctx)
@@ -72,6 +76,51 @@ class ContinuousEntmax(nn.Module):
         super(ContinuousEntmax, self).__init__()
         self.psi = psi
         self.alpha = alpha
+        self.kernel = EntmaxGaussian1DKernel(alpha)
 
     def forward(self, theta):
-        return ContinuousEntmaxFunction.apply(theta, self.psi, self.alpha)
+        return ContinuousEntmaxFunction.apply(theta, self.psi, self.kernel)
+
+
+class ContinuousSoftmax(nn.Module):
+    def __init__(self, psi=None):
+        super(ContinuousSoftmax, self).__init__()
+        self.psi = psi
+        self.alpha = 1
+        self.kernel = Gaussian1DKernel()
+
+    def forward(self, theta):
+        return ContinuousEntmaxFunction.apply(theta, self.psi, self.kernel)
+
+
+class ContinuousSparsemax(nn.Module):
+    def __init__(self, psi=None):
+        super(ContinuousSparsemax, self).__init__()
+        self.psi = psi
+        self.alpha = 2
+        self.kernel = SparsemaxGaussian1DKernel()
+
+    def forward(self, theta):
+        return ContinuousEntmaxFunction.apply(theta, self.psi, self.kernel)
+
+
+class ContinuousBiweight(nn.Module):
+    def __init__(self, psi=None):
+        super(ContinuousBiweight, self).__init__()
+        self.psi = psi
+        self.alpha = 1.5
+        self.kernel = BiweightGaussian1DKernel()
+
+    def forward(self, theta):
+        return ContinuousEntmaxFunction.apply(theta, self.psi, self.kernel)
+
+
+class ContinuousTriweight(nn.Module):
+    def __init__(self, psi=None):
+        super(ContinuousTriweight, self).__init__()
+        self.psi = psi
+        self.alpha = 1
+        self.kernel = TriweightGaussian1DKernel()
+
+    def forward(self, theta):
+        return ContinuousEntmaxFunction.apply(theta, self.psi, self.kernel)

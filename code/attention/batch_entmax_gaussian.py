@@ -13,7 +13,7 @@ def _radius(n, alpha):
 
 
 class EntmaxGaussian1D(object):
-    def __init__(self, alpha, mu, sigma_sq=None, support_size=None):
+    def __init__(self, alpha, mu=None, sigma_sq=None, support_size=None):
         """Create 1D (2-alpha)-Gaussian with parameter alpha.
         The density is
             p(x) = [(alpha-1)*(-tau - .5*(x-mu)**2/sigma_sq)]_+**(1/(alpha-1)).
@@ -22,7 +22,11 @@ class EntmaxGaussian1D(object):
         mu and sigma_sq (or support_size) are tensors with the same dimensions.
         """
         self._alpha = alpha
-        self._R = _radius(1, alpha)
+        self._R = _radius(1, alpha) if alpha != 1 else math.inf
+        if mu is not None:
+            self.set_parameters(mu, sigma_sq, support_size)
+
+    def set_parameters(self, mu, sigma_sq=None, support_size=None):
         self._mu = mu
         if sigma_sq is None:
             self._a = support_size/2
@@ -102,10 +106,21 @@ class EntmaxGaussian1D(object):
 
 
 class Gaussian1D(object):
-    def __init__(self, mu, sigma_sq):
+    def __init__(self, mu=None, sigma_sq=None):
         """Create 1D beta-Gaussian with alpha=2 (sparsemax)."""
+        self._alpha = 1
+        if mu is not None:
+            self.set_parameters(mu, sigma_sq)
+
+    def set_parameters(self, mu, sigma_sq):
         self._mu = mu
         self._sigma_sq = sigma_sq
+
+    def mean(self):
+        return self._mu
+
+    def variance(self):
+        return self._sigma_sq
 
     def pdf(self, x):
         mu = self._mu[(None,)*x.ndim]
@@ -124,9 +139,14 @@ class Gaussian1D(object):
 
 
 class SparsemaxGaussian1D(object):
-    def __init__(self, mu, sigma_sq=None, support_size=None):
+    def __init__(self, mu=None, sigma_sq=None, support_size=None):
         """Create 1D beta-Gaussian with alpha=2 (sparsemax)."""
         self._alpha = 2
+        self._R = (3/2)**(1/3)
+        if mu is not None:
+            self.set_parameters(mu, sigma_sq, support_size)
+
+    def set_parameters(self, mu, sigma_sq=None, support_size=None):
         self._mu = mu
         if sigma_sq is None:
             self._a = support_size/2
@@ -175,11 +195,15 @@ class SparsemaxGaussian1D(object):
 
 
 class BiweightGaussian1D(object):
-    def __init__(self, mu, sigma_sq=None, support_size=None):
+    def __init__(self, mu=None, sigma_sq=None, support_size=None):
         """Create 1D beta-Gaussian with alpha=1.5 (biweight)."""
         self._alpha = 1.5
-        self._mu = mu
         self._R = _radius(1, self._alpha)  # 15**(1/5)
+        if mu is not None:
+            self.set_parameters(mu, sigma_sq, support_size)
+
+    def set_parameters(self, mu, sigma_sq=None, support_size=None):
+        self._mu = mu
         if sigma_sq is None:
             self._a = support_size/2
             self._sigma_sq = self._sigma_sq_from_a(self._a)
@@ -228,9 +252,14 @@ class BiweightGaussian1D(object):
 
 
 class TriweightGaussian1D(object):
-    def __init__(self, mu, sigma_sq=None, support_size=None):
+    def __init__(self, mu=None, sigma_sq=None, support_size=None):
         """Create 1D beta-Gaussian with alpha=4/3 (triweight)."""
         self._alpha = 4/3
+        self._R = _radius(1, self._alpha)  # (945/4)**(1/7)
+        if mu is not None:
+            self.set_parameters(mu, sigma_sq, support_size)
+
+    def set_parameters(self, mu, sigma_sq=None, support_size=None):
         self._mu = mu
         if sigma_sq is None:
             self._a = support_size/2
