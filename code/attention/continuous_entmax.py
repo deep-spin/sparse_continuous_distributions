@@ -6,8 +6,6 @@ from batch_entmax_gaussian_kernels import (EntmaxGaussian1DKernel,
 import torch
 import torch.nn as nn
 
-torch.autograd.set_detect_anomaly(True)
-
 
 class ContinuousEntmaxFunction(torch.autograd.Function):
     @classmethod
@@ -119,7 +117,7 @@ class ContinuousTriweight(nn.Module):
     def __init__(self, psi=None):
         super(ContinuousTriweight, self).__init__()
         self.psi = psi
-        self.alpha = 1
+        self.alpha = 4/3
         self.kernel = TriweightGaussian1DKernel()
 
     def forward(self, theta):

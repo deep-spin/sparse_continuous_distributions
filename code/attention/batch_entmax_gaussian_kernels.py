@@ -61,11 +61,14 @@ class EntmaxGaussian1DKernel(object):
     def variance(self):
         return self._entmax.variance()
 
-    def sigma_sq_from_support_size(self, support_size):
-        return self._entmax.sigma_sq_from_a(support_size/2)
+    def support_size(self):
+        return self._entmax.support_size()
 
     def sigma_sq_from_variance(self, variance):
         return self._entmax._sigma_sq_from_variance(variance)
+
+    def sigma_sq_from_support_size(self, support_size):
+        return self._entmax._sigma_sq_from_a(support_size/2)
 
     def attention(self, psi):
         return self.expectation_psi(psi)  # dim(mu) x dim(psi)
