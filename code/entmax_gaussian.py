@@ -1,6 +1,7 @@
 from scipy.special import gamma
 from scipy.linalg import sqrtm
 import numpy as np
+import math
 
 
 def _radius(n, alpha):
@@ -11,7 +12,7 @@ def _radius(n, alpha):
 
 
 class EntmaxGaussian(object):
-    def __init__(self, mu, Sigma, alpha):
+    def __init__(self, alpha, mu, Sigma):
         """Create multivariate (2-alpha)-Gaussian with parameter alpha.
         The density is:
             p(x) = [(alpha-1)*(-tau - f(x)]_+ ** (1/(alpha-1)),
@@ -31,6 +32,13 @@ class EntmaxGaussian(object):
         return -(self._R**2)/2 * np.linalg.det(self._Sigma) ** (
             -1 / (self._n + 2/(self._alpha - 1)))
 
+    def _Sigma_from_variance(self, variance):
+        Sigma_tilde = ((self._n + 2*self._alpha/(self._alpha-1)) / self._R**2
+                       ) * variance
+        Sigma = (np.linalg.det(Sigma_tilde) ** ((self._alpha-1)/2)
+                 ) * Sigma_tilde
+        return Sigma
+
     def mean(self):
         return self._mu
 
@@ -41,13 +49,26 @@ class EntmaxGaussian(object):
     def pdf(self, x):
         """Return the probability density function value for `x`."""
         y = self._Sigma_inv_sqrt.dot(x - self._mu[:, None])
-        energy = -.5 * np.sum(y**2, 0)
+        negenergy = -.5 * np.sum(y**2, 0)
         return np.maximum(0, (self._alpha-1)*(
-            energy - self._tau()))**(1/(self._alpha-1))
+            negenergy - self._tau()))**(1/(self._alpha-1))
 
     def sample(self, m):
         """Generate a random sample of size `m`."""
-        raise NotImplementedError
+        # Sample uniformly from sphere.
+        u = np.random.randn(m, self._n)
+        u /= np.linalg.norm(u, axis=1)[:, np.newaxis]
+
+        # Sample radius.
+        # ratio = r^2 / R^2, so r = R * sqrt(ratio).
+        ratio = np.random.beta(self._n / 2,
+                               self._alpha / (self._alpha - 1),
+                               size=m)
+        r = self._R * np.sqrt(ratio)
+        z = r[:, np.newaxis] * u
+        A = (np.linalg.det(self._Sigma) ** (-1/(2*self._n + 4/(self._alpha-1)))
+             ) * sqrtm(self._Sigma)
+        return (self._mu[:, None] + A.dot(z.T)).T
 
     def tsallis_entropy(self):
         """Compute Tsallis alpha-entropy."""
@@ -64,7 +85,7 @@ class EntmaxGaussian1D(object):
         (convenient for uniform distributions, where alpha=inf).
         """
         self._alpha = alpha
-        self._R = _radius(1, alpha)
+        self._R = _radius(1, alpha) if alpha != 1 else math.inf
         self._mu = mu
         if sigma_sq is None:
             self._a = support_size/2
@@ -87,6 +108,10 @@ class EntmaxGaussian1D(object):
     def _sigma_sq_from_a(self, a):
         return (a / self._R) ** (self._alpha+1)
 
+    def _sigma_sq_from_variance(self, variance):
+        return ((1 + 2*self._alpha/(self._alpha-1)) / (self._R**2)
+                * variance) ** ((self._alpha + 1)/2)
+
     def mean(self):
         return self._mu
 
@@ -94,6 +119,9 @@ class EntmaxGaussian1D(object):
         if self._alpha == np.inf:
             return self._a**2 / 3
         else:
+            # Equivalently (without tau):
+            # return ((self._R**2) / (1 + 2*self._alpha/(self._alpha-1)) *  
+            #        self._sigma_sq ** (2/(self._alpha + 1)))
             return ((-2*self._tau)/(1 + 2*self._alpha/(self._alpha-1)) *
                     self._sigma_sq)
 
@@ -123,9 +151,16 @@ class EntmaxGaussian1D(object):
 
 class Gaussian1D(object):
     def __init__(self, mu=0, sigma_sq=1):
-        """Create 1D beta-Gaussian with alpha=2 (sparsemax)."""
+        """Create 1D beta-Gaussian with alpha=1 (Gaussian)."""
+        self._alpha = 1
         self._mu = mu
         self._sigma_sq = sigma_sq
+
+    def mean(self):
+        return self._mu
+
+    def variance(self):
+        return self._sigma_sq
 
     def pdf(self, x):
         return (1/np.sqrt(2*np.pi*self._sigma_sq) *
@@ -144,6 +179,7 @@ class SparsemaxGaussian1D(object):
     def __init__(self, mu=0, sigma_sq=None, support_size=None):
         """Create 1D beta-Gaussian with alpha=2 (sparsemax)."""
         self._alpha = 2
+        self._R = (3/2)**(1/3)
         self._mu = mu
         if sigma_sq is None:
             self._a = support_size/2
@@ -162,6 +198,9 @@ class SparsemaxGaussian1D(object):
 
     def _sigma_sq_from_a(self, a):
         return (2/3) * a**3
+
+    def _sigma_sq_from_variance(self, variance):
+        return 2/3 * (5*variance)**(3/2)
 
     def mean(self):
         return self._mu
@@ -188,8 +227,8 @@ class BiweightGaussian1D(object):
     def __init__(self, mu=0, sigma_sq=None, support_size=None):
         """Create 1D beta-Gaussian with alpha=1.5 (biweight)."""
         self._alpha = 1.5
+        self._R = _radius(1, self._alpha)  # 15**(1/5)
         self._mu = mu
-        self._R = _radius(1, self._alpha)
         if sigma_sq is None:
             self._a = support_size/2
             self._sigma_sq = self._sigma_sq_from_a(self._a)
@@ -207,6 +246,9 @@ class BiweightGaussian1D(object):
 
     def _sigma_sq_from_a(self, a):
         return (a / self._R) ** (self._alpha+1)
+
+    def _sigma_sq_from_variance(self, variance):
+        return (1/15)**(1/2) * (7*variance)**(5/4)
 
     def mean(self):
         return self._mu
@@ -235,6 +277,7 @@ class TriweightGaussian1D(object):
     def __init__(self, mu=0, sigma_sq=None, support_size=None):
         """Create 1D beta-Gaussian with alpha=4/3 (triweight)."""
         self._alpha = 4/3
+        self._R = _radius(1, self._alpha)  # (945/4)**(1/7)
         self._mu = mu
         if sigma_sq is None:
             self._a = support_size/2
@@ -250,6 +293,12 @@ class TriweightGaussian1D(object):
 
     def _compute_a(self):
         return ((945/4)*self._sigma_sq**3)**(1/7)
+
+    def _sigma_sq_from_a(self, a):
+        return (a / self._R) ** (self._alpha+1)
+
+    def _sigma_sq_from_variance(self, variance):
+        return (4/945)**(1/3) * (9*variance)**(7/6)
 
     def mean(self):
         return self._mu

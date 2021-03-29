@@ -29,7 +29,7 @@ if __name__ == '__main__':
 
     # Use general class which handles arbitrary alpha.
     for alpha in [2, 3/2, 4/3]:
-        entmax = EntmaxGaussian1D(mu, sigma_sq, alpha=alpha)
+        entmax = EntmaxGaussian1D(alpha, mu, sigma_sq)
         plt.plot(t, entmax.pdf(t), label='%f' % alpha)
         y, err = integrate.quad(entmax.pdf, -5, 5)
         print(y)
@@ -38,9 +38,9 @@ if __name__ == '__main__':
 
     # Use general class for multivariate entmax Gaussian.
     for alpha in [2, 3/2, 4/3]:
-        entmax = EntmaxGaussian(np.array([mu]),
-                                np.array([[sigma_sq]]),
-                                alpha=alpha)
+        entmax = EntmaxGaussian(alpha,
+                                np.array([mu]),
+                                np.array([[sigma_sq]]))
         plt.plot(t, entmax.pdf(t[None, :]), label='%f' % alpha)
         y, err = integrate.quad(entmax.pdf, -5, 5)
         print(y)

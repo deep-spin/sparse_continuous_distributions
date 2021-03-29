@@ -107,7 +107,7 @@ class EntmaxGaussian1D(object):
 
 class Gaussian1D(object):
     def __init__(self, mu=None, sigma_sq=None):
-        """Create 1D beta-Gaussian with alpha=2 (sparsemax)."""
+        """Create 1D beta-Gaussian with alpha=1 (Gaussian)."""
         self._alpha = 1
         if mu is not None:
             self.set_parameters(mu, sigma_sq)
