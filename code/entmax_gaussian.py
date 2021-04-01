@@ -21,7 +21,7 @@ class EntmaxGaussian(object):
         """
         self._alpha = alpha
         self._n = np.size(mu)
-        self._R = _radius(self._n, alpha)
+        self._R = _radius(self._n, alpha) if alpha != 1 else math.inf
         self._mu = mu
         self._Sigma = Sigma
         self._Sigma_inv = np.linalg.inv(Sigma)
@@ -33,6 +33,8 @@ class EntmaxGaussian(object):
             -1 / (self._n + 2/(self._alpha - 1)))
 
     def _Sigma_from_variance(self, variance):
+        if self._alpha == 1:
+            return np.array(variance)
         Sigma_tilde = ((self._n + 2*self._alpha/(self._alpha-1)) / self._R**2
                        ) * variance
         Sigma = (np.linalg.det(Sigma_tilde) ** ((self._alpha-1)/2)
@@ -43,6 +45,8 @@ class EntmaxGaussian(object):
         return self._mu
 
     def variance(self):
+        if self._alpha == 1:
+            return np.array(self._Sigma)
         return ((-2*self._tau())/(self._n + 2*self._alpha/(self._alpha-1)) *
                 self._Sigma)
 
@@ -50,11 +54,20 @@ class EntmaxGaussian(object):
         """Return the probability density function value for `x`."""
         y = self._Sigma_inv_sqrt.dot(x - self._mu[:, None])
         negenergy = -.5 * np.sum(y**2, 0)
-        return np.maximum(0, (self._alpha-1)*(
-            negenergy - self._tau()))**(1/(self._alpha-1))
+        if self._alpha == 1:
+            return np.exp(negenergy) / (
+                (2*np.pi)**(self._n/2) * np.linalg.det(self._Sigma)**(1/2))
+        else:
+            return np.maximum(0, (self._alpha-1)*(
+                negenergy - self._tau()))**(1/(self._alpha-1))
 
     def sample(self, m):
         """Generate a random sample of size `m`."""
+        if self._alpha == 1:
+            z = np.random.randn(m, self._n)
+            A = sqrtm(self._Sigma)
+            return (self._mu[:, None] + A.dot(z.T)).T
+
         # Sample uniformly from sphere.
         u = np.random.randn(m, self._n)
         u /= np.linalg.norm(u, axis=1)[:, np.newaxis]
