@@ -3,6 +3,7 @@ from scipy.linalg import sqrtm
 import numpy as np
 
 from scipy.stats._multivariate import multi_rv_generic, multi_rv_frozen
+from scipy.stats._multivariate import multivariate_normal
 
 from .utils import _PSD, _process_parameters
 
@@ -12,6 +13,9 @@ _LOG_2PI = np.log(2 * np.pi)
 
 def _radius(n, alpha):
     """Return radius R for a given dimension n and alpha."""
+
+    if alpha == 1:
+        return np.inf
 
     a_m1 = alpha - 1
     a_ratio = alpha / a_m1
@@ -34,7 +38,7 @@ def scale_from_cov(alpha, cov):
     scale_tilde = ((n + 2 * alpha / (alpha - 1)) / radius ** 2) * cov
     det_st = np.linalg.det(scale_tilde)
     scale = (det_st ** ((alpha - 1) / 2)) * scale_tilde
-    return Sigma
+    return scale
 
 
 class multivariate_beta_gaussian_gen(multi_rv_generic):
@@ -80,21 +84,19 @@ class multivariate_beta_gaussian_gen(multi_rv_generic):
             return -(radius ** 2) / 2 * np.exp(-log_det / (rank + (2 / a_m1)))
 
     def _pdf(self, x, mean, prec_U, log_det, rank, alpha, radius):
+
         dev = x - mean
         neg_maha = -0.5 * np.sum(np.square(np.dot(dev, prec_U)), axis=-1)
 
         logpdf = neg_maha - self._tau(alpha, log_det, rank)  # Tsallis log
         # XXX could return a (log_beta)pdf at this point
-
-        if alpha > 1:
-            a_m1 = alpha - 1
-            pdf = np.maximum(a_m1 * logpdf, 0) ** (1 / a_m1)
-        else:
-            pdf = np.exp(logpdf)
-
+        a_m1 = alpha - 1
+        pdf = np.maximum(a_m1 * logpdf, 0) ** (1 / a_m1)
         return pdf
 
     def pdf(self, x, mean=None, scale=1, alpha=2, allow_singular=False):
+        if alpha == 1:
+            return multivariate_normal(mean, scale).pdf(x)
         dim, mean, scale, alpha = self._process_parameters(None, mean, scale, alpha)
         psd = _PSD(scale, allow_singular=allow_singular)
         radius = _radius(psd.rank, alpha)
@@ -108,7 +110,7 @@ class multivariate_beta_gaussian_gen(multi_rv_generic):
         if np.isscalar(size):
             size = (size,)
 
-        u = random_state.randn(*(size + (rank,)))
+        u = random_state.standard_normal((size + (rank,)))
         u /= np.linalg.norm(u, axis=-1)[..., np.newaxis]
 
         # Sample radius.
@@ -182,6 +184,8 @@ class multivariate_beta_gaussian_frozen(multi_rv_frozen):
         self.tau = self._dist._tau(alpha, self.scale_info.log_pdet, self.scale_info.rank)
 
     def pdf(self, x):
+        if self.alpha == 1:
+            return multivariate_normal(self.mean, self.scale).pdf(x)
         out = self._dist._pdf(x,
                               self.mean,
                               self.scale_info.U,
