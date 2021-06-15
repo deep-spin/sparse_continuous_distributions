@@ -23,7 +23,7 @@ def plot_contour(mbg, ax, n_samples=500, label=False, supp=False, **kwargs):
     CS = ax.contour(X, Y, Z, levels=levels, **kwargs)
 
     if label:  # label the contour lines
-        ax.clabel(CS)
+        ax.clabel(CS, fmt="%.2f")
 
 
 if __name__ == "__main__":
@@ -33,9 +33,10 @@ if __name__ == "__main__":
     rng = np.random.default_rng(5)
 
     params = {
-        'spherical': (np.zeros(dim), np.eye(dim)),
-        'elliptical': (np.zeros(dim), np.array([[1.5, 1], [1, 1.2]]))
+        'spherical': (np.zeros(dim), .4 * np.eye(dim)),
+        'elliptical': (np.zeros(dim), .4 * np.array([[1.5, 1], [1, 1.2]]))
     }
+
 
     configurations = [
         dict(name="Gaussian", alpha=1),
