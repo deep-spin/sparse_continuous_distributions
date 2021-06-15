@@ -81,7 +81,6 @@ if __name__ == "__main__":
         obj = (mvbg.log_prob(X_spl) -mvn.log_prob(X_spl)).mean()
         obj.backward()
         opt.step()
-        print(obj.item())
 
     X_spl = mvbg.rsample(sample_shape=(n_samples,))
     _scatter(ax_pred_after, X_spl)
