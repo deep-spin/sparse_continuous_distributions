@@ -185,9 +185,7 @@ class MultivariateBetaGaussian(Distribution):
         tau_term = 2 * self._tau / denom
         return alpha_term + tau_term
 
-    def cross_fy(self, x, broadcast_batch=False):
-        """return the cross-Fenchel-Young loss between the model and dirac x"""
-
+    def _mahalanobis(self, x, broadcast_batch=False):
         # The first output is the mean, the second is log_sigma_sq.
 
         # x: shape [B', D] -- possibly different B', right?
@@ -220,8 +218,18 @@ class MultivariateBetaGaussian(Distribution):
         diff = diff.unsqueeze(dim=-1)
         diff_scaled = (Li @ diff).squeeze(dim=-1)
         maha = diff_scaled.square().sum(dim=-1) / 2
-        return maha + self.tsallis_entropy
+        return maha
 
+    def pdf(self, x, broadcast_batch=False):
+        f = -self._tau - self._mahalanobis(x, broadcast_batch)
+        return torch.clip((self.alpha - 1) * f, min=0) ** (1 / (self.alpha - 1))
+
+    def log_prob(self, x, broadcast_batch=False):
+        return torch.log(self.pdf(x, broadcast_batch))
+
+    def cross_fy(self, x, broadcast_batch=False):
+        """return the cross-Fenchel-Young loss between the model and dirac x"""
+        return self._mahalanobis(x, broadcast_batch) + self.tsallis_entropy
 
     def rsample(self, sample_shape):
         shape = self._extended_shape(sample_shape)
@@ -308,14 +316,7 @@ def main():
     mbg._naive_radius()
     X = mbg.rsample((1000,))
 
-    # check that it is reparametrizable correctly:
-    X.square().mean().backward()
-    print(mean.grad)
-    print(P.grad)
-    print(alpha.grad)
-
     # plot the figure
-
     X = X.detach().numpy()
 
     import matplotlib.pyplot as plt
