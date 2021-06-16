@@ -18,7 +18,7 @@ def plot_contour(mbg, ax, n_samples=500, label=False, supp=False, **kwargs):
         ax.contourf(X, Y, Z, levels=[0, np.finfo(np.double).eps], colors='#ccc')
 
     # draw the contour lines
-    CS = ax.contour(X, Y, Z, levels=levels, **kwargs)
+    CS = ax.contour(X, Y, Z, **kwargs)
 
     if label:  # label the contour lines
         ax.clabel(CS, fmt="%.2f")
@@ -41,10 +41,10 @@ if __name__ == "__main__":
     levels = [0.01, 0.03, 0.1, 0.3]
 
     configurations = [
-        dict(name="Gaussian", alpha=1),
-        dict(name="Triweight", alpha=4 / 3),
-        dict(name="Biweight", alpha=3 / 2),
-        dict(name="Epanechnikov", alpha=2),
+        dict(name="Gaussian", alpha="1"),
+        dict(name="Triweight", alpha="4/3"),
+        dict(name="Biweight", alpha="3/2"),
+        dict(name="Epanechnikov", alpha="2"),
     ]
 
     fig, axes = plt.subplots(len(params), len(configurations),
@@ -55,8 +55,8 @@ if __name__ == "__main__":
     for i, cfg in enumerate(configurations):
         for j, shape in enumerate(["spherical", "elliptical"]):
             loc, scale = params[shape]
-            mbg = multivariate_beta_gaussian(loc, scale,
-                                             alpha=cfg['alpha'])
+            alpha_ = eval(cfg['alpha'], {}, {})
+            mbg = multivariate_beta_gaussian(loc, scale, alpha_)
 
             # sample from the beta-Gaussian
             X = mbg.rvs(n_samples, random_state=rng)
@@ -64,13 +64,12 @@ if __name__ == "__main__":
             # fit a new beta-Gaussian to the sample
             loc_fit = np.mean(X, axis=0)
             cov_fit = np.cov(X, rowvar=False)
-            scale_fit = scale_from_cov(cfg['alpha'], cov_fit)
-            mbg_fit = multivariate_beta_gaussian(loc_fit, scale_fit,
-                                                 alpha=cfg['alpha'])
+            scale_fit = scale_from_cov(alpha_, cov_fit)
+            mbg_fit = multivariate_beta_gaussian(loc_fit, scale_fit, alpha_)
 
             # plot samples and contours
             ax = axes[j, i]
-            ax.set_title(r"{name} ($\alpha={alpha:.1f}$)".format(**cfg))
+            ax.set_title(r"{name} ($\alpha={alpha}$)".format(**cfg))
             ax.set_aspect('equal', share=True)
             ax.scatter(X[:, 0], X[:, 1], marker='.', s=1)
             label = i == j == 0 # only show label on first subplot
