@@ -45,7 +45,10 @@ class multivariate_beta_gaussian_gen(multi_rv_generic):
     r"""A multivariate beta-Gaussian random variable.
 
     The `mean` keyword specifies the mean.
-    The `loc` keyword specifies the Sigma matrix (uniquely defines the covariance.
+    The `scale` keyword specifies the Sigma matrix (uniquely defines the
+    covariance).
+
+    Currently does not support $alpha<1$.
 
     Methods
     -------
