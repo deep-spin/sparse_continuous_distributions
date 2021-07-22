@@ -36,7 +36,7 @@ def main():
 
     torch.set_default_dtype(torch.double)
 
-    n_iter = 1000
+    n_iter = 5000
     n_samples = 1000
     batch_size = 32
     alpha = 2
