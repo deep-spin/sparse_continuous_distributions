@@ -21,7 +21,7 @@ def meshplot(f, ax, n_samples=100):
     ax.contourf(mesh_x, mesh_y, z)
 
 
-def _scatter(ax, X):
+def _scatter(ax, X, title):
     X = X.detach().numpy()
     ax.scatter(X[:, 0],
                X[:, 1],
@@ -29,6 +29,7 @@ def _scatter(ax, X):
                marker='.',
                color='C1',
                zorder=10,)
+    ax.set_title(title)
 
 
 def main():
@@ -56,8 +57,9 @@ def main():
     scale_diag = torch.randn(dim, requires_grad=True)
     mbg = MultivariateBetaGaussianDiag(loc, scale_diag ** 2, alpha=alpha)
 
-    _scatter(ax_true, mvn.rsample((n_samples,)))
-    _scatter(ax_pred_before, mbg.rsample((n_samples,)))
+    _scatter(ax_true, mvn.rsample((n_samples,)), title="Multivariate normal")
+    _scatter(ax_pred_before, mbg.rsample((n_samples,)),
+             title="Before fitting")
 
     gauss_pdf = lambda x: torch.exp(mvn.log_prob(x))
     meshplot(gauss_pdf, ax_true)
@@ -78,7 +80,8 @@ def main():
         loss.backward()
         opt.step()
 
-    _scatter(ax_pred_after, mbg.rsample(sample_shape=(n_samples,)))
+    _scatter(ax_pred_after, mbg.rsample(sample_shape=(n_samples,)),
+             title="After fitting")
     meshplot(mbg.pdf, ax_pred_after)
 
     plt.show()
