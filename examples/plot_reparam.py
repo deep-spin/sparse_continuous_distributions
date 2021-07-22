@@ -88,8 +88,8 @@ if __name__ == "__main__":
     meshplot(mvbg.pdf, ax_pred_after)
 
     ax_true.set_title("True target (Gaussian)")
-    ax_pred_before.set_title("Predicted (before training")
-    ax_pred_after.set_title("Predicted (after training")
+    ax_pred_before.set_title("Predicted (before training)")
+    ax_pred_after.set_title("Predicted (after training)")
 
     plt.show()
 
