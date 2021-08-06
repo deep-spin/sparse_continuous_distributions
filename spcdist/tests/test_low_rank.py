@@ -1,3 +1,4 @@
+import numpy as np
 from spcdist.scipy import multivariate_beta_gaussian
 
 def test_low_rank():
@@ -12,4 +13,4 @@ def test_low_rank():
                                        size=n)
 
     assert np.all(X[:, 1] == 42)
-    assert np.allclose(np.var(x), np.var(X[:, 0])
+    assert np.allclose(np.var(x), np.var(X[:, 0]), atol=1e-2, rtol=1e-2)

@@ -41,7 +41,10 @@ class FactorizedScale(object):
         self._zero = scales.new_zeros(size=(1,))
 
         # scales: [B x D x D]
-        s, u = torch.symeig(scales, eigenvectors=True, upper=True)
+
+        # s, u = torch.symeig(scales, eigenvectors=True, upper=True)
+        s, u = torch.linalg.eigh(scales)
+
         eps = _eigvalsh_to_eps(s, cond, rcond)
 
         if torch.any(torch.min(s, dim=-1).values < -eps):
@@ -217,7 +220,6 @@ class MultivariateBetaGaussian(Distribution):
         return alpha_term + tau_term
 
     def _mahalanobis(self, x, broadcast_batch=False):
-        # The first output is the mean, the second is log_sigma_sq.
 
         # x: shape [B', D] -- possibly different B', right?
         # loc: shape [B, D].
@@ -243,11 +245,9 @@ class MultivariateBetaGaussian(Distribution):
 
         # right now with B=[], now, this yields [B', D]
 
-        # this works now because [B', D] @ [D, D]. But how about in general?
-
         Li = self._fact_scale.L_inv
         diff = diff.unsqueeze(dim=-1)
-        diff_scaled = (Li @ diff).squeeze(dim=-1)
+        diff_scaled = (Li.transpose(-2, -1) @ diff).squeeze(dim=-1)
         maha = diff_scaled.square().sum(dim=-1) / 2
         return maha
 
@@ -262,7 +262,13 @@ class MultivariateBetaGaussian(Distribution):
 
     def cross_fy(self, x, broadcast_batch=False):
         """The cross-Omega Fenchel-Young loss w.r.t. a Dirac observation x"""
-        return self._mahalanobis(x, broadcast_batch) + self.tsallis_entropy
+        n_a_m1 = self._fact_scale.rank * (self.alpha - 1)
+
+        c = torch.log(n_a_m1) - torch.log(2 * self.alpha + n_a_m1) - LOG_2
+
+        return (self._mahalanobis(x, broadcast_batch)
+                + self.tsallis_entropy
+                + torch.exp(2 * self.log_radius + c))
 
     def rsample(self, sample_shape):
         """Draw samples from the distribution."""

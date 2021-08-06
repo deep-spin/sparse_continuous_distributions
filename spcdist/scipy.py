@@ -218,3 +218,8 @@ class multivariate_beta_gaussian_frozen(multi_rv_frozen):
     def tsallis_entropy(self):
         return self._dist._tsallis_entropy(self.alpha, self.scale_info.rank,
                 self.tau)
+
+    def variance(self):
+        """Compute the covariance given the scale matrix. (mean is ignored.)"""
+        return self._dist._variance(self.scale, self.alpha, self.scale_info.log_pdet,
+                self.scale_info.rank)

@@ -1,8 +1,8 @@
 import numpy as np
 import torch
 
-from entmax_gaussian import multivariate_beta_gaussian
-from torch_dist import MultivariateBetaGaussianDiag
+from spcdist.scipy import multivariate_beta_gaussian
+from spcdist.torch import MultivariateBetaGaussianDiag
 
 def main():
 

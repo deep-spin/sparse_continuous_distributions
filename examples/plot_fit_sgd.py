@@ -34,12 +34,13 @@ def _scatter(ax, X, title):
 
 def main():
 
+    torch.manual_seed(42)
     torch.set_default_dtype(torch.double)
 
-    n_iter = 5000
+    n_iter = 1000
     n_samples = 1000
     batch_size = 32
-    alpha = 2
+    alpha = 1.5
     dim = 2
 
     fig, axes = plt.subplots(1, 3, figsize=(10, 4),
@@ -66,7 +67,7 @@ def main():
     meshplot(mbg.pdf, ax_pred_before)
 
     parameters = [loc, scale_diag]
-    opt = torch.optim.Adam(parameters, lr=1.0)
+    opt = torch.optim.Adam(parameters, lr=.1)
 
     for it in range(n_iter):
         opt.zero_grad()
@@ -77,6 +78,8 @@ def main():
         X = mvn.rsample((batch_size,))
 
         loss = mbg.cross_fy(X).mean()
+        if it % 100 == 0:
+            print(loss.item())
         loss.backward()
         opt.step()
 

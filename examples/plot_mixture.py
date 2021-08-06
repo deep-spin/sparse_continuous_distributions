@@ -12,12 +12,12 @@ if __name__ == '__main__':
 
     n_clusters = 3
     d = 2
-    torch.random.manual_seed(1)
+    torch.random.manual_seed(2)
 
     mean = 3 * torch.randn(n_clusters, 2)
     P = torch.randn(n_clusters, 2, 2)
     scales = .5 * torch.eye(2) + .5 * P @ P.transpose(2, 1)
-    alpha = torch.tensor(10.0)
+    alpha = torch.tensor(10.)
 
     mbg = MultivariateBetaGaussian(mean, scales, alpha=alpha)
     X = mbg.rsample((1000,)).reshape(-1, 2)
@@ -31,25 +31,24 @@ if __name__ == '__main__':
 
     parameters = [loc, scale_diag, cluster_logits]
 
-    # opt = torch.optim.Adam(parameters, lr=.9)
-    opt = torch.optim.SGD(parameters, lr=.01)
+    opt = torch.optim.Adam(parameters, lr=.1)
 
-    n_iter = 10001
+    n_iter = 1001
 
     for it in range(n_iter):
         opt.zero_grad()
 
         scale = scale_diag ** 2
-        model = MultivariateBetaGaussianDiag(loc, scale, alpha=alpha)
+        model = MultivariateBetaGaussianDiag(loc, scale, alpha)
         dists = model.cross_fy(X, broadcast_batch=True)
         cluster_proba = torch.softmax(cluster_logits, dim=-1)
-        loss = torch.mean(torch.sum(dists * cluster_proba), dim=-1)
+        loss = torch.sum(dists * cluster_proba, dim=-1).log().mean()
 
-        if it % 1000 == 0:
+        if it % 100 == 0:
             print(loss.item())
+
         loss.backward()
         opt.step()
-
 
     X_np = X.numpy()
     y = torch.min(dists, dim=-1).indices.numpy()

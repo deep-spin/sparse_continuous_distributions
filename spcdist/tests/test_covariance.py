@@ -1,5 +1,5 @@
 import numpy as np
-from spdist.scipy import multivariate_beta_gaussian
+from spcdist.scipy import multivariate_beta_gaussian
 
 
 def test_covariance():
@@ -8,13 +8,8 @@ def test_covariance():
                       [.2, .3]])
 
     for alpha in (1.25, 1.5, 2, 2.5):
-        X = multivariate_beta_gaussian.rvs(
-                mean=mean,
-                scale=scale,
-                size=10000,
-                alpha=alpha,
-                random_state=0)
-
+        mbg = multivariate_beta_gaussian(mean=mean, scale=scale, alpha=alpha)
+        X = mbg.rvs(size=10000, random_state=0)
         empirical = np.cov(X.T)
-        theoretical = mbg.variance(mean=mean, scale=scale, alpha=alpha)
-        assert np.allclose(empirical, theoretical)
+        theoretical = mbg.variance()
+        assert np.allclose(empirical, theoretical, atol=1e-2, rtol=1e-2)
