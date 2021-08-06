@@ -21,11 +21,15 @@ which builds upon
 > [link](https://papers.neurips.cc/paper/2020/hash/f0b76267fbe12b936bd65e203dc675c1-Abstract.html)
 
 ## Requirements:
-    - numpy, scipy
-    - pytorch (optional, for gradients and attention code)
+
+numpy, scipy, (optional: pytorch>=1.8.1)
+
+(Note: pytorch is optional, the `spcdist.{scipy, scipy_1d}` modules work without it.)
 
 ## Installation:
 
 ```bash
 pip install .
+# or
+pip install .[torch]  # to also install the pytorch dependency 
 ```
