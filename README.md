@@ -1,8 +1,12 @@
+[![tests workflow](https://github.com/deep-spin/sparse_continuous_distributions/actions/workflows/test.yml/badge.svg)
+
 # spcdist: sparse continuous distributions in Python
 
 <img src="spcdist_samples.png" alt="Contours of, and samples from,
 several beta-Gaussian distributions, with spherical and 
 full-covariance settings.">
+
+------------------------------------------------------
 
 This repository implements the beta-Gaussian 1-d and n-d distributions,
 as well as continuous attention mechanisms based on it.
