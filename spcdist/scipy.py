@@ -1,7 +1,6 @@
 """scipy implementation of beta-Gaussians (compatible to scipy.stats)"""
 
 from scipy.special import gamma
-from scipy.linalg import sqrtm
 import numpy as np
 
 from scipy.stats._multivariate import multi_rv_generic, multi_rv_frozen
@@ -67,8 +66,10 @@ class multivariate_beta_gaussian_gen(multi_rv_generic):
     def __init__(self, seed=None):
         super().__init__(seed)
 
-    def __call__(self, mean=None, scale=1, alpha=2, allow_singular=False, seed=None):
-        return multivariate_beta_gaussian_frozen(mean, scale, alpha, allow_singular, seed)
+    def __call__(self, mean=None, scale=1, alpha=2, allow_singular=False,
+                 seed=None):
+        return multivariate_beta_gaussian_frozen(mean, scale, alpha,
+                                                 allow_singular, seed)
 
     def _process_parameters(self, dim, mean, scale, alpha):
         """
@@ -102,12 +103,14 @@ class multivariate_beta_gaussian_gen(multi_rv_generic):
     def pdf(self, x, mean=None, scale=1, alpha=2, allow_singular=False):
         if alpha == 1:
             return multivariate_normal(mean, scale).pdf(x)
-        dim, mean, scale, alpha = self._process_parameters(None, mean, scale, alpha)
+        _params = self._process_parameters(None, mean, scale, alpha)
+        dim, mean, scale, alpha = _params
         psd = _PSD(scale, allow_singular=allow_singular)
         radius = _radius(psd.rank, alpha)
         return self._pdf(x, mean, psd.U, psd.log_pdet, psd.rank, alpha, radius)
 
-    def _rvs(self, mean, scale_sqrt, rank, log_det, alpha, radius, size, random_state):
+    def _rvs(self, mean, scale_sqrt, rank, log_det, alpha, radius, size,
+             random_state):
 
         a_m1 = alpha - 1
 
@@ -129,9 +132,11 @@ class multivariate_beta_gaussian_gen(multi_rv_generic):
 
         return mean + Uz
 
-    def rvs(self, mean=None, scale=1, alpha=2, size=1, allow_singular=False, random_state=None):
+    def rvs(self, mean=None, scale=1, alpha=2, size=1, allow_singular=False,
+            random_state=None):
 
-        dim, mean, scale, alpha = self._process_parameters(None, mean, scale, alpha)
+        _params = self._process_parameters(None, mean, scale, alpha)
+        dim, mean, scale, alpha = _params
         random_state = self._get_random_state(random_state)
 
         if alpha == 1:
@@ -160,7 +165,8 @@ class multivariate_beta_gaussian_gen(multi_rv_generic):
 
     def variance(self, mean=None, scale=1, alpha=2, allow_singular=False):
         """Compute the covariance given the scale matrix. (mean is ignored.)"""
-        dim, mean, scale, alpha = self._process_parameters(None, mean, scale, alpha)
+        dim, mean, scale, alpha = \
+            self._process_parameters(None, mean, scale, alpha)
         psd = _PSD(scale, allow_singular=allow_singular)
         return self._variance(scale, alpha, psd.log_pdet, psd.rank)
 
@@ -168,9 +174,11 @@ class multivariate_beta_gaussian_gen(multi_rv_generic):
         a_m1 = alpha - 1
         return (1 / (alpha * a_m1)) + ((2 * tau) / (2 * alpha + rank * a_m1))
 
-    def tsallis_entropy(self, mean=None, scale=1, alpha=2, allow_singular=False):
+    def tsallis_entropy(self, mean=None, scale=1, alpha=2,
+                        allow_singular=False):
         """Compute Tsallis alpha-entropy. (mean is ignored.)"""
-        dim, mean, scale, alpha = self._process_parameters(None, mean, scale, alpha)
+        dim, mean, scale, alpha = \
+            self._process_parameters(None, mean, scale, alpha)
         psd = _PSD(scale, allow_singular=allow_singular)
         tau = self._tau(alpha, psd.log_pdet, psd.rank)
         return self._tsallis_entropy(alpha, psd.rank, tau)
@@ -180,13 +188,15 @@ multivariate_beta_gaussian = multivariate_beta_gaussian_gen()
 
 
 class multivariate_beta_gaussian_frozen(multi_rv_frozen):
-    def __init__(self, mean=None, scale=1, alpha=2, allow_singular=False, seed=None):
+    def __init__(self, mean=None, scale=1, alpha=2, allow_singular=False,
+                 seed=None):
         self._dist = multivariate_beta_gaussian_gen(seed)
         self.dim, self.mean, self.scale, self.alpha = \
             self._dist._process_parameters(None, mean, scale, alpha)
         self.scale_info = _PSD(self.scale, allow_singular=allow_singular)
         self.radius = _radius(self.scale_info.rank, alpha)
-        self.tau = self._dist._tau(alpha, self.scale_info.log_pdet, self.scale_info.rank)
+        self.tau = self._dist._tau(alpha, self.scale_info.log_pdet,
+                                   self.scale_info.rank)
 
     def pdf(self, x):
         if self.alpha == 1:
@@ -204,7 +214,9 @@ class multivariate_beta_gaussian_frozen(multi_rv_frozen):
     def rvs(self, size=1, random_state=None):
         random_state = self._dist._get_random_state(random_state)
         if self.alpha == 1:
-            return random_state.multivariate_normal(self.mean, self.scale, size)
+            return random_state.multivariate_normal(self.mean,
+                                                    self.scale,
+                                                    size)
         else:
             return self._dist._rvs(self.mean,
                                    self.scale_info.L,
@@ -217,9 +229,11 @@ class multivariate_beta_gaussian_frozen(multi_rv_frozen):
 
     def tsallis_entropy(self):
         return self._dist._tsallis_entropy(self.alpha, self.scale_info.rank,
-                self.tau)
+                                           self.tau)
 
     def variance(self):
         """Compute the covariance given the scale matrix. (mean is ignored.)"""
-        return self._dist._variance(self.scale, self.alpha, self.scale_info.log_pdet,
-                self.scale_info.rank)
+        return self._dist._variance(self.scale,
+                                    self.alpha,
+                                    self.scale_info.log_pdet,
+                                    self.scale_info.rank)

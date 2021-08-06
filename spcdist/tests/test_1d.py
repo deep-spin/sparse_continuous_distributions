@@ -1,10 +1,11 @@
 from spcdist.scipy import multivariate_beta_gaussian
-from spcdist.scipy_1d import (EntmaxGaussian1D, Gaussian1D, SparsemaxGaussian1D,
-                             BiweightGaussian1D, TriweightGaussian1D)
+from spcdist.scipy_1d import (EntmaxGaussian1D,
+                              Gaussian1D,
+                              SparsemaxGaussian1D,
+                              BiweightGaussian1D,
+                              TriweightGaussian1D)
 
-from scipy import integrate
 import numpy as np
-import matplotlib.pyplot as plt
 
 import pytest
 

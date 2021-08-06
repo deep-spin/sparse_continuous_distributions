@@ -1,16 +1,14 @@
 """pytorch implementation of beta-Gaussians and reparametrized sampling"""
 
 import numpy as np
-from scipy.special import gamma
 
-import math
 import numbers
 
 import torch
 from torch.distributions import constraints
 from torch.distributions import Beta
 from torch.distributions.distribution import Distribution
-from torch.distributions.utils import _standard_normal, lazy_property
+from torch.distributions.utils import lazy_property
 
 
 LOG_2 = np.log(2)
@@ -122,7 +120,7 @@ class MultivariateBetaGaussian(Distribution):
 
         The pdf takes the form
 
-        p(x) = [(alpha - 1) * -.5 (x-u)' inv(Sigma) (x-u) - tau]_+ ** (alpha - 1)
+        p(x) = [(alpha-1) * -.5 (x-u)' inv(Sigma) (x-u) - tau]_+ ** (alpha-1)
 
         where (u, Sigma) are the location and scale parameters.
 
@@ -167,20 +165,6 @@ class MultivariateBetaGaussian(Distribution):
         self._fact_scale = FactorizedScale(scale)
 
         super().__init__(batch_shape, event_shape, validate_args)
-
-    def _naive_radius(self):
-        assert len(self._batch_shape) == 1
-
-        for i in range(self._batch_shape[0]):
-
-            a = self.alpha[i].item()
-            a_m1 = a - 1
-            a_ratio = a / a_m1
-
-            n = self._fact_scale.rank[i].item()
-
-            print(((gamma(n / 2 + a_ratio) / (gamma(a_ratio) * np.pi ** (n / 2))) *
-                   (2 / a_m1) ** (1 / a_m1)) ** (a_m1 / (2 + a_m1 * n)))
 
     @lazy_property
     def log_radius(self):
@@ -227,7 +211,6 @@ class MultivariateBetaGaussian(Distribution):
         # 1. Mahalanobis term
 
         d = x.shape[-1]
-        loc_batch_shape = self.batch_shape
 
         if broadcast_batch:
             # assume loc is [B, D] and manually insert ones
@@ -254,7 +237,7 @@ class MultivariateBetaGaussian(Distribution):
     def pdf(self, x, broadcast_batch=False):
         """Probability of an broadcastable observation x (could be zero)"""
         f = -self._tau - self._mahalanobis(x, broadcast_batch)
-        return torch.clip((self.alpha - 1) * f, min=0) ** (1 / (self.alpha - 1))
+        return torch.clip((self.alpha-1) * f, min=0) ** (1 / (self.alpha-1))
 
     def log_prob(self, x, broadcast_batch=False):
         """Log-probability of an broadcastable observation x (could be -inf)"""
@@ -323,7 +306,7 @@ class MultivariateBetaGaussianDiag(MultivariateBetaGaussian):
 
         The pdf takes the form
 
-        p(x) = [(alpha - 1) * -.5 (x-u)' inv(Sigma) (x-u) - tau]_+ ** (alpha - 1)
+        p(x) = [(alpha-1) * -.5 (x-u)' inv(Sigma) (x-u) - tau]_+ ** (alpha-1)
 
         where (u, Sigma) are the location and scale parameters.
 

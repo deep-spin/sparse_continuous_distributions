@@ -1,6 +1,7 @@
 import numpy as np
 from spcdist.scipy import multivariate_beta_gaussian
 
+
 def test_low_rank():
     n = 1000
     x = multivariate_beta_gaussian.rvs(mean=1, scale=.5, alpha=2, size=n,
