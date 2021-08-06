@@ -3,7 +3,8 @@ from spcdist.scipy import multivariate_beta_gaussian
 
 def test_low_rank():
     n = 1000
-    x = multivariate_beta_gaussian.rvs(mean=1, scale=.5, alpha=2, size=n)
+    x = multivariate_beta_gaussian.rvs(mean=1, scale=.5, alpha=2, size=n,
+                                       random_state=32)
 
     mean = np.array([1, 42])
     scale = np.array([.5, 0])

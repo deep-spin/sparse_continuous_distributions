@@ -1,8 +1,8 @@
-from batch_entmax_gaussian_kernels import (EntmaxGaussian1DKernel,
-                                           Gaussian1DKernel,
-                                           SparsemaxGaussian1DKernel,
-                                           BiweightGaussian1DKernel,
-                                           TriweightGaussian1DKernel)
+from .batch_entmax_gaussian_kernels import (EntmaxGaussian1DKernel,
+                                            Gaussian1DKernel,
+                                            SparsemaxGaussian1DKernel,
+                                            BiweightGaussian1DKernel,
+                                            TriweightGaussian1DKernel)
 import torch
 import torch.nn as nn
 
@@ -62,7 +62,7 @@ class ContinuousEntmaxFunction(torch.autograd.Function):
     @classmethod
     def backward(cls, ctx, grad_output):
         #mu, sigma = ctx.saved_tensors
-        
+
         # J is dim(mu) x 2 x dim(psi)
         J = cls._jacobian(ctx)
         grad_input = torch.matmul(J, grad_output.unsqueeze(2)).squeeze(2)

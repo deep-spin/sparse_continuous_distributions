@@ -1,10 +1,11 @@
-from batch_entmax_gaussian import (EntmaxGaussian1D,
-                                   Gaussian1D,
-                                   SparsemaxGaussian1D,
-                                   BiweightGaussian1D,
-                                   TriweightGaussian1D)
+from .batch_entmax_gaussian import (EntmaxGaussian1D,
+                                    Gaussian1D,
+                                    SparsemaxGaussian1D,
+                                    BiweightGaussian1D,
+                                    TriweightGaussian1D)
 import torch
 import math
+
 
 
 def _batch_linspace(start, end, steps):
@@ -41,7 +42,7 @@ class EntmaxGaussian1DKernel(object):
             mu=self._mu,
             support_size=self._entmax.support_size(),
             use_escort=False)
-    
+
     def _escort_normalizer(self):
         """Compute the escort normalizer ||p||_beta^beta with beta = 2-alpha."""
         alpha_escort = self._escort._alpha
@@ -57,7 +58,7 @@ class EntmaxGaussian1DKernel(object):
 
     def mean(self):
         return self._entmax.mean()
-    
+
     def variance(self):
         return self._entmax.variance()
 
@@ -74,7 +75,7 @@ class EntmaxGaussian1DKernel(object):
         return self.expectation_psi(psi)  # dim(mu) x dim(psi)
 
     def attention_gradient(self, psi):
-        escort_normalizer = self._escort_normalizer()  # dim(mu) 
+        escort_normalizer = self._escort_normalizer()  # dim(mu)
         left = self._escort.expectation_t_times_psi(psi)  # dim(mu) x dim(psi)
         # (dim(mu)) * (dim(mu) x dim(psi)) -> dim(mu) x dim(psi)
         right = (self._escort.expectation_t().unsqueeze(1) *

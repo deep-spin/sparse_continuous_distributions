@@ -1,10 +1,17 @@
-from batch_entmax_gaussian import (EntmaxGaussian1D, SparsemaxGaussian1D,
-                                   BiweightGaussian1D, TriweightGaussian1D)
-from basis_function import GaussianBasisFunctions
-from batch_entmax_gaussian_kernels import (EntmaxGaussian1DKernel,
-                                           SparsemaxGaussian1DKernel,
-                                           BiweightGaussian1DKernel,
-                                           TriweightGaussian1DKernel)
+from spcdist.attention.batch_entmax_gaussian import (
+    EntmaxGaussian1D,
+    SparsemaxGaussian1D,
+    BiweightGaussian1D,
+    TriweightGaussian1D)
+
+from spcdist.attention.basis_function import GaussianBasisFunctions
+
+from spcdist.attention.batch_entmax_gaussian_kernels import (
+    EntmaxGaussian1DKernel,
+    SparsemaxGaussian1DKernel,
+    BiweightGaussian1DKernel,
+    TriweightGaussian1DKernel
+)
 import torch
 
 if __name__ == '__main__':
