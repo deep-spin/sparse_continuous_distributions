@@ -26,6 +26,8 @@ jobs:
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
       - name: Install package
         run: |
+          # install cpu-only torch, more lightweight
+          pip install torch==1.8.1+cpu -f https://download.pytorch.org/whl/lts/1.8/torch_lts.html
           pip install .[torch]
       - name: Test with pytest
         run: |
