@@ -1,3 +1,5 @@
+"""scipy implementation of beta-Gaussians (compatible to scipy.stats)"""
+
 from scipy.special import gamma
 from scipy.linalg import sqrtm
 import numpy as np

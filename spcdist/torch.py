@@ -1,3 +1,5 @@
+"""pytorch implementation of beta-Gaussians and reparametrized sampling"""
+
 import numpy as np
 from scipy.special import gamma
 
@@ -34,6 +36,7 @@ def _eigvalsh_to_eps(spectra, cond=None, rcond=None):
 
 class FactorizedScale(object):
     def __init__(self, scales, cond=None, rcond=None, upper=True):
+        """Factorized representation of a batch of scale PSD matrices."""
 
         self._zero = scales.new_zeros(size=(1,))
 
@@ -84,6 +87,7 @@ class FactorizedScale(object):
 
 class DiagScale(FactorizedScale):
     def __init__(self, scales, cond=None, rcond=None, upper=True):
+        """Compact representation of a batch of diagonal scale matrices."""
 
         self._zero = scales.new_zeros(size=(1,))
 
@@ -108,11 +112,37 @@ class MultivariateBetaGaussian(Distribution):
     has_rsample = True
 
     def __init__(self, loc, scale=None, alpha=2, validate_args=None):
+        """Batched multivariate beta-Gaussian random variable.
+
+        The r.v. is parametrized in terms of a location (mean), scale
+        (proportional to covariance) matrix, and scalar alpha>1.
+
+        The pdf takes the form
+
+        p(x) = [(alpha - 1) * -.5 (x-u)' inv(Sigma) (x-u) - tau]_+ ** (alpha - 1)
+
+        where (u, Sigma) are the location and scale parameters.
+
+        Parameters
+        ---------- loc: tensor, shape (broadcastable to) (*batch_dims, D)
+            mean of the the distribution.
+
+        scale: tensor, shape (broadcastable to) (*batch_dims, D, D)
+            scale parameter Sigma of the distribution.
+
+        alpha: scalar or tensor broadcastable to (*batch_dims)
+            The exponent parameter of the distribution.
+            For alpha -> 1, the distribution converges to a Gaussian.
+            For alpha = 2, the distribution is a Truncated Paraboloid
+                (n-d generalization of the Epanechnikov kernel.)
+            For alpha -> infty, the distribution converges to a
+            uniform on an ellipsoid.
+        """
 
         if isinstance(alpha, numbers.Number):
             alpha = loc.new_tensor(alpha)
 
-        # XXX dimensions must be compatible to:
+        # dimensions must be compatible to:
         # mean: [B x D]
         # scale: [B x D x D]
         # alpha: [B x 1]
@@ -151,6 +181,7 @@ class MultivariateBetaGaussian(Distribution):
 
     @lazy_property
     def log_radius(self):
+        """Logarithm of the max-radius R of the distribution."""
 
         alpha = self.alpha
         alpha_m1 = alpha - 1
@@ -177,7 +208,7 @@ class MultivariateBetaGaussian(Distribution):
 
     @lazy_property
     def tsallis_entropy(self):
-        # this is -Omega, right?
+        """The Tsallis entropy -Omega_alpha of the distribution"""
         n = self._fact_scale.rank
         alpha_m1 = self.alpha - 1
         alpha_term = 1 / (self.alpha * alpha_m1)
@@ -221,17 +252,20 @@ class MultivariateBetaGaussian(Distribution):
         return maha
 
     def pdf(self, x, broadcast_batch=False):
+        """Probability of an broadcastable observation x (could be zero)"""
         f = -self._tau - self._mahalanobis(x, broadcast_batch)
         return torch.clip((self.alpha - 1) * f, min=0) ** (1 / (self.alpha - 1))
 
     def log_prob(self, x, broadcast_batch=False):
+        """Log-probability of an broadcastable observation x (could be -inf)"""
         return torch.log(self.pdf(x, broadcast_batch))
 
     def cross_fy(self, x, broadcast_batch=False):
-        """return the cross-Fenchel-Young loss between the model and dirac x"""
+        """The cross-Omega Fenchel-Young loss w.r.t. a Dirac observation x"""
         return self._mahalanobis(x, broadcast_batch) + self.tsallis_entropy
 
     def rsample(self, sample_shape):
+        """Draw samples from the distribution."""
         shape = self._extended_shape(sample_shape)
         # print(shape) if called with (5,) gives (5,2,3)
 
@@ -276,14 +310,36 @@ class MultivariateBetaGaussianDiag(MultivariateBetaGaussian):
                        'alpha': constraints.greater_than(1)}
 
     def __init__(self, loc, scale=None, alpha=2, validate_args=None):
+        """Batched multivariate beta-Gaussian random variable w/ diagonal scale.
+
+        The r.v. is parametrized in terms of a location (mean), diagonal scale
+        (proportional to covariance) matrix, and scalar alpha>1.
+
+        The pdf takes the form
+
+        p(x) = [(alpha - 1) * -.5 (x-u)' inv(Sigma) (x-u) - tau]_+ ** (alpha - 1)
+
+        where (u, Sigma) are the location and scale parameters.
+
+        Parameters
+        ----------
+        loc: tensor, shape (broadcastable to) (*batch_dims, D)
+            mean of the the distribution.
+
+        scale: tensor, shape (broadcastable to) (*batch_dims, D)
+            diagonal of the scale parameter Sigma.
+
+        alpha: scalar or tensor broadcastable to (*batch_dims)
+            The exponent parameter of the distribution.
+            For alpha -> 1, the distribution converges to a Gaussian.
+            For alpha = 2, the distribution is a Truncated Paraboloid
+                (n-d generalization of the Epanechnikov kernel.)
+            For alpha -> infty, the distribution converges to a
+            uniform on an ellipsoid.
+        """
 
         if isinstance(alpha, numbers.Number):
             alpha = loc.new_tensor(alpha)
-
-        # XXX dimensions must be compatible to:
-        # mean: [B x D]
-        # scale: [B x D x D]
-        # alpha: [B x 1]
 
         batch_shape = torch.broadcast_shapes(scale.shape[:-1],
                                              loc.shape[:-1],
@@ -302,33 +358,3 @@ class MultivariateBetaGaussianDiag(MultivariateBetaGaussian):
         self._fact_scale = DiagScale(scale)
 
         Distribution.__init__(self, batch_shape, event_shape, validate_args)
-
-
-def main():
-    n_clusters = 5
-    P = torch.randn(n_clusters, 2, 2, requires_grad=True)  # try using (2, 1) here to see low-rank
-    scales = P @ P.transpose(2, 1)
-
-    mean = torch.randn(n_clusters, 2, requires_grad=True)
-    alpha = torch.tensor(2.5, requires_grad=True)
-    mbg = MultivariateBetaGaussian(mean, scales, alpha=alpha)
-
-    mbg._naive_radius()
-    X = mbg.rsample((1000,))
-
-    # plot the figure
-    X = X.detach().numpy()
-
-    import matplotlib.pyplot as plt
-
-    plt.figure()
-    for i in range(n_clusters):
-        plt.scatter(X[:, i, 0], X[:, i, 1], alpha=.2, marker='.')
-
-    plt.show()
-
-
-if __name__ == '__main__':
-    main()
-
-
