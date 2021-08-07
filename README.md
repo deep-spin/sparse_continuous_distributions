@@ -1,4 +1,4 @@
-[![tests workflow](https://github.com/deep-spin/sparse_continuous_distributions/actions/workflows/test.yml/badge.svg)
+![tests workflow](https://github.com/deep-spin/sparse_continuous_distributions/actions/workflows/test.yml/badge.svg)
 
 # spcdist: sparse continuous distributions in Python
 
