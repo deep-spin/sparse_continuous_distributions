@@ -10,6 +10,10 @@ class BasisFunctions(object):
         """Number of basis functions."""
         raise NotImplementedError
 
+    def to(self, device):
+        """Move to device."""
+        raise NotImplementedError
+
     def evaluate(self, t):
         raise NotImplementedError
 
@@ -52,6 +56,10 @@ class PowerBasisFunctions(BasisFunctions):
         """Number of basis functions."""
         return self.degree.size(1)
 
+    def to(self, device):
+        self.degree = self.degree.to(device)
+        return self
+
     def evaluate(self, t):
         return t ** self.degree
 
@@ -89,6 +97,10 @@ class SineBasisFunctions(BasisFunctions):
     def __len__(self):
         """Number of basis functions."""
         return self.omega.size(1)
+
+    def to(self, device):
+        self.omega = self.omega.to(device)
+        return self
 
     def evaluate(self, t):
         return torch.sin(self.omega * t)
@@ -136,6 +148,10 @@ class CosineBasisFunctions(BasisFunctions):
         """Number of basis functions."""
         return self.omega.size(1)
 
+    def to(self, device):
+        self.omega = self.omega.to(device)
+        return self
+
     def evaluate(self, t):
         return torch.cos(self.omega * t)
 
@@ -182,6 +198,11 @@ class GaussianBasisFunctions(BasisFunctions):
     def __len__(self):
         """Number of basis functions."""
         return self.mu.size(1)
+
+    def to(self, device):
+        self.mu = self.mu.to(device)
+        self.sigma = self.sigma.to(device)
+        return self
 
     def _phi(self, t):
         return 1.0 / math.sqrt(2 * math.pi) * torch.exp(-0.5 * t ** 2)
