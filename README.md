@@ -37,3 +37,7 @@ pip install .
 # or
 pip install .[torch]  # to also install the pytorch dependency 
 ```
+
+## Applications:
+- [Speech Classification](https://github.com/deep-spin/speech-continuous-attention)
+- [Visual Question Answering](https://github.com/deep-spin/vqa-multimodal-continuous-attention)
