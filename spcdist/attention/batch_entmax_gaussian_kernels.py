@@ -12,7 +12,7 @@ def _batch_linspace(start, end, steps):
     """Linspace with a batch dimension.
     start and end are 1D tensors, steps is a scalar.
     Returns a 2D tensor dim(steps) x dim(start)."""
-    t = torch.linspace(0, 1, steps).unsqueeze(1)
+    t = torch.linspace(0, 1, steps, device=start.device).unsqueeze(1)
     return (1-t)*start.unsqueeze(0) + t*end.unsqueeze(0)
 
 
