@@ -53,6 +53,10 @@ class EntmaxGaussian1D(object):
         return ((1 + 2*self._alpha/(self._alpha-1)) / (self._R**2)
                 * variance) ** ((self._alpha + 1)/2)
 
+    def _support_size_from_sigma_sq(self, sigma_sq):
+        a = torch.sqrt(-2 * self._tau * sigma_sq)
+        return 2 * a
+
     def mean(self):
         return self._mu
 
@@ -169,6 +173,10 @@ class SparsemaxGaussian1D(object):
     def _sigma_sq_from_variance(self, variance):
         return 2/3 * (5*variance)**(3/2)
 
+    def _support_size_from_sigma_sq(self, sigma_sq):
+        a = ((3/2)*sigma_sq)**(1/3)
+        return 2 * a
+
     def mean(self):
         return self._mu
 
@@ -224,6 +232,10 @@ class BiweightGaussian1D(object):
 
     def _sigma_sq_from_variance(self, variance):
         return (1/15)**(1/2) * (7*variance)**(5/4)
+
+    def _support_size_from_sigma_sq(self, sigma_sq):
+        a = (15*sigma_sq**2)**(1/5)
+        return 2 * a
 
     def mean(self):
         return self._mu
@@ -281,6 +293,10 @@ class TriweightGaussian1D(object):
 
     def _sigma_sq_from_variance(self, variance):
         return (4/945)**(1/3) * (9*variance)**(7/6)
+
+    def _support_size_from_sigma_sq(self, sigma_sq):
+        a = ((945/4)*sigma_sq**3)**(1/7)
+        return 2 * a
 
     def mean(self):
         return self._mu
