@@ -245,13 +245,11 @@ class MultivariateBetaGaussian(Distribution):
 
     def cross_fy(self, x, broadcast_batch=False):
         """The cross-Omega Fenchel-Young loss w.r.t. a Dirac observation x"""
-        n_a_m1 = self._fact_scale.rank * (self.alpha - 1)
 
-        c = torch.log(n_a_m1) - torch.log(2 * self.alpha + n_a_m1) - LOG_2
-
-        return (self._mahalanobis(x, broadcast_batch)
-                + self.tsallis_entropy
-                + torch.exp(2 * self.log_radius + c))
+        maha = self._mahalanobis(x, broadcast_batch)
+        n = self._fact_scale.rank
+        scaled_entropy = (1 + (n * (self.alpha - 1)) / 2) * self.tsallis_entropy
+        return maha + scaled_entropy
 
     def rsample(self, sample_shape):
         """Draw samples from the distribution."""

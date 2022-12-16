@@ -69,14 +69,15 @@ def main():
     parameters = [loc, scale_diag]
     opt = torch.optim.Adam(parameters, lr=.1)
 
+
     for it in range(n_iter):
         opt.zero_grad()
 
         scale = scale_diag ** 2
         mbg = MultivariateBetaGaussianDiag(loc, scale, alpha=alpha)
+
         # get a sample
         X = mvn.rsample((batch_size,))
-
         loss = mbg.cross_fy(X).mean()
         if it % 100 == 0:
             print(loss.item())
