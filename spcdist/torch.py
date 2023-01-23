@@ -293,7 +293,7 @@ class MultivariateBetaGaussian(Distribution):
 
 class MultivariateBetaGaussianDiag(MultivariateBetaGaussian):
     arg_constraints = {'loc': constraints.real_vector,
-                       'scale': constraints.greater_than(0),
+                       'scale': constraints.greater_than_eq(0),
                        'alpha': constraints.greater_than(1)}
 
     def __init__(self, loc, scale=None, alpha=2, validate_args=None):
