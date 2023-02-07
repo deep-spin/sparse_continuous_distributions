@@ -77,13 +77,15 @@ class FactorizedScale(object):
         log_s_inv = torch.where(self.s_mask, torch.log(self.s_inv), self._zero)
         return torch.sum(log_s_inv, dim=-1)
 
-    @lazy_property
-    def L(self):
-        return self.u @ torch.diag_embed(torch.sqrt(self.s))
-
-    @lazy_property
-    def L_inv(self):
-        return self.u @ torch.diag_embed(torch.sqrt(self.s_inv))
+    def get_diff_scaled(self, diff):
+        Li = self.u * torch.sqrt(self.s_inv)
+        diff_scaled = (Li.transpose(-2, -1) @ diff.unsqueeze(dim=-1)).squeeze(dim=-1)
+        return diff_scaled
+    
+    def LZ(self, Z):
+        Z = Z.unsqueeze(dim=-1)
+        L = self.u * torch.sqrt(self.s)
+        return (L @ Z).squeeze(dim=-1)
 
 
 class DiagScale(FactorizedScale):
@@ -104,6 +106,13 @@ class DiagScale(FactorizedScale):
         self.s = torch.where(self.s_mask, scales, self._zero)
         self.s_inv = torch.where(self.s_mask, 1 / scales, self._zero)
 
+    def get_diff_scaled(self, diff):
+        diff_scaled_diag = torch.sqrt(self.s_inv) * diff
+        return diff_scaled_diag
+    
+    def LZ(self, Z):
+        return torch.sqrt(self.s) * Z
+    
 
 class MultivariateBetaGaussian(Distribution):
     arg_constraints = {'loc': constraints.real_vector,
@@ -226,11 +235,8 @@ class MultivariateBetaGaussian(Distribution):
         # [B', B, D]
         diff = x - self.loc
 
-        # right now with B=[], now, this yields [B', D]
-
-        Li = self._fact_scale.L_inv
-        diff = diff.unsqueeze(dim=-1)
-        diff_scaled = (Li.transpose(-2, -1) @ diff).squeeze(dim=-1)
+        diff_scaled = self._fact_scale.get_diff_scaled(diff)
+        
         maha = diff_scaled.square().sum(dim=-1) / 2
         return maha
 
@@ -277,13 +283,8 @@ class MultivariateBetaGaussian(Distribution):
         r = radius * torch.sqrt(ratio)
 
         Z = r.unsqueeze(dim=-1) * U
-        Z = Z.unsqueeze(dim=-1)
 
-        L = self._fact_scale.L
-
-        # z @ Lt = (L @ Zt).t
-
-        LZ = (L @ Z).squeeze(dim=-1)
+        LZ = self._fact_scale.LZ(Z)
 
         c = torch.exp(-self._fact_scale.log_det / (2 * n + 4 / alpha_m1))
         c = c.expand(sample_shape + c.shape).unsqueeze(-1)
