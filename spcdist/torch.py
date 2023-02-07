@@ -78,13 +78,13 @@ class FactorizedScale(object):
         return torch.sum(log_s_inv, dim=-1)
 
     def get_diff_scaled(self, diff):
-        Li = self.u @ torch.diag_embed(torch.sqrt(self.s_inv))
-        diff_scaled = (Li.transpose(-2, -1) @ diff).squeeze(dim=-1)
+        Li = self.u * torch.sqrt(self.s_inv)
+        diff_scaled = (Li.transpose(-2, -1) @ diff.unsqueeze(dim=-1)).squeeze(dim=-1)
         return diff_scaled
     
     def LZ(self, Z):
         Z = Z.unsqueeze(dim=-1)
-        L = self.u @ torch.diag_embed(torch.sqrt(self.s))
+        L = self.u * torch.sqrt(self.s)
         return (L @ Z).squeeze(dim=-1)
 
 
