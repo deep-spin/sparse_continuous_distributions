@@ -81,9 +81,19 @@ class FactorizedScale(object):
     def L(self):
         return self.u @ torch.diag_embed(torch.sqrt(self.s))
 
+    def L_mul_X(self, X):
+        assert len(X.shape) > 1
+        tmp = torch.sqrt(self.s).unsqueeze(-1) * X
+        return self.u @ tmp
+
     @lazy_property
     def L_inv(self):
         return self.u @ torch.diag_embed(torch.sqrt(self.s_inv))
+
+    def L_inv_t_mul_X(self, X):
+        assert len(X.shape) > 1
+        tmp = self.u.transpose(-2, -1) @ X
+        return torch.sqrt(self.s_inv).unsqueeze(-1) * tmp
 
 
 class DiagScale(FactorizedScale):
@@ -100,9 +110,19 @@ class DiagScale(FactorizedScale):
         # probably could use searchsorted
         self.s_mask = scales > eps.unsqueeze(dim=-1)
 
-        self.u = torch.eye(scales.shape[-1])
+        # self.u = torch.eye(scales.shape[-1])
+        # print("d")
+        # exit()
         self.s = torch.where(self.s_mask, scales, self._zero)
         self.s_inv = torch.where(self.s_mask, 1 / scales, self._zero)
+
+    def L_mul_X(self, X):
+        assert len(X.shape) > 1
+        return torch.sqrt(self.s).unsqueeze(-1) * X
+
+    def L_inv_t_mul_X(self, X):
+        assert len(X.shape) > 1
+        return torch.sqrt(self.s_inv).unsqueeze(-1) * X
 
 
 class MultivariateBetaGaussian(Distribution):
@@ -125,7 +145,8 @@ class MultivariateBetaGaussian(Distribution):
         where (u, Sigma) are the location and scale parameters.
 
         Parameters
-        ---------- loc: tensor, shape (broadcastable to) (*batch_dims, D)
+        ----------
+        loc: tensor, shape (broadcastable to) (*batch_dims, D)
             mean of the the distribution.
 
         scale: tensor, shape (broadcastable to) (*batch_dims, D, D)
@@ -228,9 +249,10 @@ class MultivariateBetaGaussian(Distribution):
 
         # right now with B=[], now, this yields [B', D]
 
-        Li = self._fact_scale.L_inv
         diff = diff.unsqueeze(dim=-1)
-        diff_scaled = (Li.transpose(-2, -1) @ diff).squeeze(dim=-1)
+        # Li = self._fact_scale.L_inv
+        # diff_scaled = (Li.transpose(-2, -1) @ diff).squeeze(dim=-1)
+        diff_scaled = self._fact_scale.L_inv_t_mul_X(diff).squeeze(dim=-1)
         maha = diff_scaled.square().sum(dim=-1) / 2
         return maha
 
@@ -250,6 +272,12 @@ class MultivariateBetaGaussian(Distribution):
         n = self._fact_scale.rank
         scaled_entropy = (1 + (n * (self.alpha - 1)) / 2) * self.tsallis_entropy
         return maha + scaled_entropy
+
+    def _scale_when_sampling(self, LZ, sample_shape)
+        n = self._fact_scale.rank
+        c = torch.exp(-self._fact_scale.log_det / (2 * n + 4 / (self.alpha-1)))
+        c = c.expand(sample_shape + c.shape).unsqueeze(-1)
+        return c * LZ
 
     def rsample(self, sample_shape):
         """Draw samples from the distribution."""
@@ -279,16 +307,12 @@ class MultivariateBetaGaussian(Distribution):
         Z = r.unsqueeze(dim=-1) * U
         Z = Z.unsqueeze(dim=-1)
 
-        L = self._fact_scale.L
-
+        # L = self._fact_scale.L
         # z @ Lt = (L @ Zt).t
-
-        LZ = (L @ Z).squeeze(dim=-1)
-
-        c = torch.exp(-self._fact_scale.log_det / (2 * n + 4 / alpha_m1))
-        c = c.expand(sample_shape + c.shape).unsqueeze(-1)
-
-        return self.loc + c * LZ
+        # LZ = (L @ Z).squeeze(dim=-1)
+        LZ = self._fact_scale.L_mul_X(Z).squeeze(dim=-1)
+        scaled_Z = self._scale_when_sampling(LZ, sample_shape)
+        return self.loc + scaled_Z
 
 
 class MultivariateBetaGaussianDiag(MultivariateBetaGaussian):
@@ -339,8 +363,8 @@ class MultivariateBetaGaussianDiag(MultivariateBetaGaussian):
         alpha = alpha.expand(batch_shape)
 
         self.loc = loc
-        self.scale = scale
         self.alpha = alpha
+        self.scale = scale
 
         self._fact_scale = DiagScale(scale)
 
