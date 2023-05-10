@@ -273,7 +273,8 @@ class MultivariateBetaGaussian(Distribution):
         scaled_entropy = (1 + (n * (self.alpha - 1)) / 2) * self.tsallis_entropy
         return maha + scaled_entropy
 
-    def _scale_when_sampling(self, LZ, sample_shape)
+    def _scale_when_sampling(self, LZ, sample_shape):
+        # correction because Sigma is not Sigma_tilde
         n = self._fact_scale.rank
         c = torch.exp(-self._fact_scale.log_det / (2 * n + 4 / (self.alpha-1)))
         c = c.expand(sample_shape + c.shape).unsqueeze(-1)
